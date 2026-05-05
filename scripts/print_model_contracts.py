@@ -116,7 +116,7 @@ import sys
 
 
 def main() -> int:
-    print(__doc__, file=sys.stderr)
+    print(__doc__)
     return 0
 
 

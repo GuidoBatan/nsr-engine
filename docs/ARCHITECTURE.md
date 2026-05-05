@@ -4,7 +4,7 @@
 
 - CPU-only. Every ONNX session is opened with `CPUExecutionProvider` explicitly (`face/onnx_util.py::make_session`). No auto-resolve.
 - Runtime dependencies: `numpy==1.26.4`, `opencv-python==4.8.1.78`, `onnxruntime==1.18.0`, `mediapipe==0.10.14`. No others admitted (§7).
-- No network access at runtime. All model files must be present on disk before construction; see `scripts/fetch_models.py`.
+- No network access at runtime. All model files must be present on disk before construction; see `scripts/print_model_contracts.py`.
 - Appearance is encoded once per session and frozen (§4.1). Motion is per-frame (§4.2).
 - No 2D landmarks, no TPS, no cv2-based geometric deformation pipeline (§1). The LivePortrait pipeline uses implicit 3D keypoints internal to the motion model; these are NOT landmarks and are consumed only by the warping + stitching ONNX graphs.
 
