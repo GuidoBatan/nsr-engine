@@ -1,7 +1,7 @@
 # NSR Engine v1.0.0
 
 CPU neural talking-head synthesis (offline). LivePortrait architecture with MediaPipe face detection.
-[![Tests](https://github.com/GuidoBatan/nsr-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/TU_USER/nsr-engine/actions)
+[![Tests](https://github.com/GuidoBatan/nsr-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/GuidoBatan/nsr-engine/actions)
 ![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
 ![Python Version](https://img.shields.io/badge/python-3.11%20%7C%203.12-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green)
