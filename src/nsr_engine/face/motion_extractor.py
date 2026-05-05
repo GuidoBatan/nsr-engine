@@ -32,21 +32,10 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy as np
-
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
-
 
 from nsr_engine.face.onnx_util import (
     describe_io,
@@ -68,6 +57,7 @@ from nsr_engine.util.latents import (
     POSE_BINS,
     MotionParams,
 )
+from nsr_engine.util.onnx_compat import ort
 from nsr_engine.util.typing import F32, U8
 
 logger = logging.getLogger("nsr.face.motion")
@@ -192,7 +182,11 @@ class MotionExtractor:
         return params
 
 
-def _check_shape(name: str, arr: np.ndarray, expected: tuple) -> None:
+def _check_shape(
+    name: str,
+    arr: np.ndarray[Any, np.dtype[Any]],
+    expected: tuple[int | None, ...],
+) -> None:
     if not shape_compatible(arr.shape, expected):
         raise RuntimeError(
             f"motion_extractor runtime shape mismatch for {name}: "

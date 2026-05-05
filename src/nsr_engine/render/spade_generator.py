@@ -24,18 +24,6 @@ from pathlib import Path
 
 import numpy as np
 
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
-
-
 from nsr_engine.face.onnx_util import (
     assert_single_input_output,
     describe_io,
@@ -49,6 +37,7 @@ from nsr_engine.util.latents import (
     WARPED_FEATURE_W,
     WarpedFeature3D,
 )
+from nsr_engine.util.onnx_compat import ort
 from nsr_engine.util.typing import F32, U8
 
 logger = logging.getLogger("nsr.render.spade")

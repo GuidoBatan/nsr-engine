@@ -20,17 +20,7 @@ import os
 from collections.abc import Iterable
 from pathlib import Path
 
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
-
+from nsr_engine.util.onnx_compat import ort
 
 
 def make_session(
@@ -74,7 +64,10 @@ def make_session(
     )
 
 
-def shape_compatible(actual: Iterable, expected: tuple) -> bool:
+def shape_compatible(
+    actual: Iterable[int | str | None],
+    expected: tuple[int | None, ...],
+) -> bool:
     """Check whether an ONNX-reported shape matches an expected tuple.
 
     ONNX shapes may contain ints, negative ints (rare), None, or strings

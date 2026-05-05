@@ -70,7 +70,7 @@ import threading
 import time
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Generic, TypeVar
+from typing import Any, Generic, TypeVar, cast
 
 import cv2
 import numpy as np
@@ -260,14 +260,17 @@ class NSREngine:
 
         self._pacer = FramePacer(cfg.target_fps)
 
-        self._last_display_rgb: U8 = cv2.resize(
-            self._avatar_crop,
-            (cfg.output_width, cfg.output_height),
-            interpolation=cv2.INTER_LINEAR,
+        self._last_display_rgb: U8 = cast(
+            U8,
+            cv2.resize(
+                self._avatar_crop,
+                (cfg.output_width, cfg.output_height),
+                interpolation=cv2.INTER_LINEAR,
+            ),
         )
 
         # Anti-cheat state
-        self._prev_kp_data: np.ndarray | None = None
+        self._prev_kp_data: np.ndarray[Any, np.dtype[Any]] | None = None
         self._prev_rgb: U8 | None = None
 
         self._last_hb_check: float = time.perf_counter()
@@ -457,9 +460,8 @@ class NSREngine:
         exc_type: type[BaseException] | None,
         exc: BaseException | None,
         tb: TracebackType | None,
-    ) -> bool:
+    ) -> None:
         self._cleanup()
-        return False
 
     def _start_threads(self) -> None:
         self._threads = [
@@ -680,10 +682,13 @@ class NSREngine:
                 last_hb_emit = time.perf_counter()
 
                 if rgb.shape[0] != cfg.output_height or rgb.shape[1] != cfg.output_width:
-                    rgb = cv2.resize(
-                        rgb,
-                        (cfg.output_width, cfg.output_height),
-                        interpolation=cv2.INTER_LINEAR,
+                    rgb = cast(
+                        U8,
+                        cv2.resize(
+                            rgb,
+                            (cfg.output_width, cfg.output_height),
+                            interpolation=cv2.INTER_LINEAR,
+                        ),
                     )
 
                 total_ms = (time.perf_counter() - t_frame_start) * 1000.0
@@ -754,13 +759,13 @@ class NSREngine:
         crop: CropResult | None,
         face_present: bool,
     ) -> U8:
-        canvas_bgr = cv2.cvtColor(base_rgb, cv2.COLOR_RGB2BGR)
+        canvas_bgr = cast(U8, cv2.cvtColor(base_rgb, cv2.COLOR_RGB2BGR))
 
         if camera_bgr is not None and self._cfg.show_debug:
             inset = self._build_camera_inset(camera_bgr, crop, face_present)
             self._paste_inset(canvas_bgr, inset)
 
-        return cv2.cvtColor(canvas_bgr, cv2.COLOR_BGR2RGB)
+        return cast(U8, cv2.cvtColor(canvas_bgr, cv2.COLOR_BGR2RGB))
 
     def _build_camera_inset(
         self,
@@ -774,7 +779,7 @@ class NSREngine:
         scale = target_w / max(1.0, float(w))
         target_h = int(round(h * scale))
 
-        inset = cv2.resize(camera_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA)
+        inset = cast(U8, cv2.resize(camera_bgr, (target_w, target_h), interpolation=cv2.INTER_AREA))
 
         if crop is not None and crop.valid:
             bbox = crop.bbox_xyxy.astype(np.float32).copy()
@@ -890,11 +895,11 @@ def _rgb_to_rgba(rgb: U8) -> U8:
     return out
 
 
-def _blend(prev: np.ndarray, new: np.ndarray, alpha_new: float) -> np.ndarray:
-    return (alpha_new * new + (1.0 - alpha_new) * prev).astype(np.float32, copy=False)
+def _blend(prev: F32, new: F32, alpha_new: float) -> F32:
+    return cast(F32, (alpha_new * new + (1.0 - alpha_new) * prev).astype(np.float32, copy=False))
 
 
-def _bbox_max_edge(bbox_xyxy: np.ndarray) -> float:
+def _bbox_max_edge(bbox_xyxy: F32) -> float:
     return float(
         max(
             float(bbox_xyxy[2] - bbox_xyxy[0]),
@@ -911,7 +916,7 @@ def _prepare_motion_input(crop_bgr: U8) -> U8:
     scale = _MOTION_INPUT_MAX_EDGE / float(max_edge)
     new_w = max(1, int(round(w * scale)))
     new_h = max(1, int(round(h * scale)))
-    return cv2.resize(crop_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA)
+    return cast(U8, cv2.resize(crop_bgr, (new_w, new_h), interpolation=cv2.INTER_AREA))
 
 
 class _MotionSmoother:

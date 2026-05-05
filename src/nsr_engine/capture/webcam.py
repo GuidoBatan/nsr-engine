@@ -9,8 +9,11 @@ import logging
 import sys
 import threading
 import time
+from typing import cast
 
 import cv2
+
+from nsr_engine.util.typing import U8
 
 logger = logging.getLogger("nsr.capture")
 
@@ -21,13 +24,13 @@ _PROBE_TIMEOUT_S = 1.5
 _DEVICE_RANGE = 6
 
 
-def _backends():
+def _backends() -> list[int]:
     if _IS_WINDOWS:
         return [cv2.CAP_DSHOW, cv2.CAP_ANY]
     return [cv2.CAP_ANY]
 
 
-def _try_open(dev: int, backend: int):
+def _try_open(dev: int, backend: int) -> cv2.VideoCapture | None:
     cap = cv2.VideoCapture(int(dev), backend)
     if not cap.isOpened():
         cap.release()
@@ -36,7 +39,7 @@ def _try_open(dev: int, backend: int):
     return cap
 
 
-def _score(dev: int, width: int, height: int):
+def _score(dev: int, width: int, height: int) -> float | None:
     for backend in _backends():
         cap = _try_open(dev, backend)
         if cap is None:
@@ -46,7 +49,7 @@ def _score(dev: int, width: int, height: int):
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
         ok_frames = 0
-        lat = []
+        lat: list[float] = []
 
         t_end = time.perf_counter() + _PROBE_TIMEOUT_S
 
@@ -72,9 +75,9 @@ def _score(dev: int, width: int, height: int):
     return None
 
 
-def _select(width: int, height: int, preferred: int):
-    best_dev = None
-    best_score = -1
+def _select(width: int, height: int, preferred: int) -> int:
+    best_dev: int | None = None
+    best_score: float = -1.0
 
     for dev in range(_DEVICE_RANGE):
         sc = _score(dev, width, height)
@@ -92,15 +95,15 @@ def _select(width: int, height: int, preferred: int):
 
 
 class WebcamCapture:
-    def __init__(self, device: int, width: int, height: int):
+    def __init__(self, device: int, width: int, height: int) -> None:
         self._width = width
         self._height = height
         self._device = _select(width, height, device)
 
-        self._cap = None
+        self._cap: cv2.VideoCapture | None = None
         self._lock = threading.Lock()
 
-        self._frame = None
+        self._frame: U8 | None = None
         self._ts = 0.0
 
         self._running = True
@@ -110,7 +113,7 @@ class WebcamCapture:
         self._thread = threading.Thread(target=self._loop, daemon=True)
         self._thread.start()
 
-    def _open(self):
+    def _open(self) -> None:
         for backend in _backends():
             cap = _try_open(self._device, backend)
             if cap:
@@ -121,7 +124,7 @@ class WebcamCapture:
         logger.warning("camera open failed, retrying...")
         self._cap = None
 
-    def _reopen(self):
+    def _reopen(self) -> None:
         try:
             if self._cap:
                 self._cap.release()
@@ -129,7 +132,7 @@ class WebcamCapture:
             pass
         self._open()
 
-    def _loop(self):
+    def _loop(self) -> None:
         fail_count = 0
 
         while self._running:
@@ -152,20 +155,22 @@ class WebcamCapture:
                 fail_count = 0
 
                 with self._lock:
-                    self._frame = frame
+                    # cv2.VideoCapture.read returns BGR uint8 at runtime;
+                    # cv2 stubs widen the dtype to `integer | floating`.
+                    self._frame = cast(U8, frame)
                     self._ts = time.perf_counter()
 
             except Exception:
                 self._reopen()
                 time.sleep(0.05)
 
-    def read(self):
+    def read(self) -> tuple[U8 | None, float]:
         with self._lock:
             if self._frame is None:
                 return None, 0.0
             return self._frame, self._ts
 
-    def release(self):
+    def release(self) -> None:
         self._running = False
         try:
             if self._cap:

@@ -34,18 +34,6 @@ from pathlib import Path
 
 import numpy as np
 
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
-
-
 from nsr_engine.face.onnx_util import (
     assert_single_input_output,
     describe_io,
@@ -57,6 +45,7 @@ from nsr_engine.util.latents import (
     KEYPOINT_FLAT,
     ImplicitKeypoints,
 )
+from nsr_engine.util.onnx_compat import ort
 
 logger = logging.getLogger("nsr.render.stitching")
 

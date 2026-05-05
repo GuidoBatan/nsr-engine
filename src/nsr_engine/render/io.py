@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import cv2
 import numpy as np
@@ -32,7 +33,9 @@ def load_avatar_rgba(path: Path) -> U8:
         alpha = np.full(img.shape[:2], 255, dtype=np.uint8)
         out = np.dstack([rgb, alpha]).astype(np.uint8, copy=False)
     elif img.ndim == 3 and img.shape[2] == 4:
-        out = cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA)
+        # cv2.cvtColor stub widens dtype to `integer | floating`; runtime
+        # always returns uint8 for this conversion.
+        out = cast(U8, cv2.cvtColor(img, cv2.COLOR_BGRA2RGBA))
     else:
         raise ValueError(f"unsupported image shape: {img.shape}")
 
@@ -45,4 +48,5 @@ def rgba_to_bgr(rgba: U8) -> U8:
     """For pipelines that need BGR (e.g. running face pipeline on avatar)."""
     if rgba.ndim != 3 or rgba.shape[2] != 4:
         raise ValueError("expected RGBA input")
-    return cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR)
+    # cv2.cvtColor stub widens dtype; uint8→uint8 conversion at runtime.
+    return cast(U8, cv2.cvtColor(rgba, cv2.COLOR_RGBA2BGR))

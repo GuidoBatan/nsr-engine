@@ -37,7 +37,7 @@ a 3-D t but the 3-D feature volume has no meaningful z-offset.
 
 from __future__ import annotations
 
-from typing import Final
+from typing import Final, cast
 
 import numpy as np
 
@@ -72,7 +72,7 @@ def decode_pose_bins(logits: F32) -> F32:
     probs = e / np.sum(e, axis=1, keepdims=True)
     # Weighted sum over bins, then scale + offset.
     degrees = np.sum(probs * _POSE_IDX[None, :], axis=1) * _POSE_BIN_DEG - _POSE_BIN_OFFSET
-    return degrees.astype(np.float32, copy=False)
+    return cast(F32, degrees.astype(np.float32, copy=False))
 
 
 def rotation_matrix(pitch_deg: F32, yaw_deg: F32, roll_deg: F32) -> F32:
@@ -127,7 +127,7 @@ def rotation_matrix(pitch_deg: F32, yaw_deg: F32, roll_deg: F32) -> F32:
     ], axis=-2)
 
     R = np.matmul(np.matmul(rz, ry), rx).astype(np.float32, copy=False)
-    return R
+    return cast(F32, R)
 
 
 def transform_keypoints(params: MotionParams) -> ImplicitKeypoints:

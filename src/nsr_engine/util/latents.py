@@ -66,9 +66,10 @@ from __future__ import annotations
 import hashlib
 import json
 from dataclasses import dataclass
-from typing import Final
+from typing import Any, Final
 
 import numpy as np
+import numpy.typing as npt
 
 from nsr_engine.util.typing import F32, U8
 
@@ -408,8 +409,14 @@ class RenderResult:
 # ---------------------------------------------------------------------------
 
 
-def _assert_shape(name: str, arr: np.ndarray, shape: tuple, dtype: np.dtype) -> None:
-    if arr.dtype != dtype:
-        raise TypeError(f"{name} must be {dtype}, got {arr.dtype}")
+def _assert_shape(
+    name: str,
+    arr: np.ndarray[Any, np.dtype[Any]],
+    shape: tuple[int, ...],
+    dtype: npt.DTypeLike,
+) -> None:
+    expected = np.dtype(dtype)
+    if arr.dtype != expected:
+        raise TypeError(f"{name} must be {expected}, got {arr.dtype}")
     if arr.shape != shape:
         raise ValueError(f"{name} must have shape {shape}, got {arr.shape}")

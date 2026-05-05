@@ -24,6 +24,7 @@ on off-frames.
 from __future__ import annotations
 
 import logging
+from typing import cast
 
 import cv2
 import numpy as np
@@ -170,4 +171,5 @@ def _crop_square_padded(
     if padded.shape[:2] != (out_size, out_size):
         padded = cv2.resize(padded, (out_size, out_size), interpolation=cv2.INTER_LINEAR)
 
-    return padded
+    # cv2.resize stub widens dtype to `integer | floating`; uint8 input → uint8 output.
+    return cast(U8, padded)

@@ -55,18 +55,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import TypeAlias
 
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
+from nsr_engine.util.onnx_compat import ort
 
+# An ONNX tensor shape: each axis is a positive int (concrete) or a string
+# (named symbolic dim) or None (unknown / dynamic).
+OnnxShape: TypeAlias = tuple[int | str | None, ...]
 
 # ---------------------------------------------------------------------------
 # Spec types
@@ -218,7 +213,7 @@ class _Bucket:
 
 
 def _resolve(
-    session_entries: list[tuple[str, tuple]],
+    session_entries: list[tuple[str, OnnxShape]],
     specs: Sequence[OutputSignature | InputSignature],
     *,
     context: str,
@@ -264,10 +259,10 @@ def _resolve(
     # Group remaining specs by the tuple of their still-eligible candidates.
     groups: dict[tuple[str, ...], _Bucket] = {}
     for spec in remaining:
-        cands = tuple(n for n in candidates[spec.role] if n not in used_names)
-        bucket = groups.setdefault(cands, _Bucket())
+        cands_t = tuple(n for n in candidates[spec.role] if n not in used_names)
+        bucket = groups.setdefault(cands_t, _Bucket())
         bucket.role_specs.append(spec)
-        for n in cands:
+        for n in cands_t:
             if n not in bucket.session_names:
                 bucket.session_names.append(n)
 
@@ -341,7 +336,7 @@ def _resolve(
 # ---------------------------------------------------------------------------
 
 
-def _shape_fits(actual: tuple, spec: OutputSignature | InputSignature) -> bool:
+def _shape_fits(actual: OnnxShape, spec: OutputSignature | InputSignature) -> bool:
     """Return True if `actual` matches `spec.shape` at any accepted rank.
 
     Rank rule:
@@ -386,18 +381,18 @@ def _shape_fits(actual: tuple, spec: OutputSignature | InputSignature) -> bool:
         if _shape_match(pad + tuple(actual), spec.shape):
             return True
     elif actual_rank > spec_rank:
-        stripped = tuple(actual)[actual_rank - spec_rank:]
-        if _shape_match(stripped, spec.shape):
+        stripped_actual = tuple(actual)[actual_rank - spec_rank:]
+        if _shape_match(stripped_actual, spec.shape):
             return True
     return False
 
 
-def _has_symbolic(shape: tuple) -> bool:
+def _has_symbolic(shape: OnnxShape) -> bool:
     """True if any axis is not a positive int (i.e. None, str, or <=0)."""
     return any(not (isinstance(d, int) and d > 0) for d in shape)
 
 
-def _shape_match(actual: tuple, expected: tuple[int | None, ...]) -> bool:
+def _shape_match(actual: OnnxShape, expected: tuple[int | None, ...]) -> bool:
     """Strict per-axis match: None/str/negative in either side is wildcard."""
     if len(actual) != len(expected):
         return False

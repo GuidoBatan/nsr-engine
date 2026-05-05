@@ -26,7 +26,7 @@ import logging
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Final
+from typing import Any, Final, cast
 
 import cv2
 import numpy as np
@@ -247,7 +247,8 @@ class CameraSupervisor:
         self._probe_results.append(True)
         if len(self._probe_results) > _CAMERA_PROBE_WINDOW:
             self._probe_results.pop(0)
-        return frame, ts
+        # cv2.VideoCapture.read returns BGR uint8 at runtime; stub widens dtype.
+        return cast(U8, frame), ts
 
     def needs_recovery(self) -> bool:
         """True if ≥15 consecutive invalid frames."""
@@ -459,6 +460,20 @@ class RuntimeGuardLayer:
                     self._trigger_recovery_locked(f"thread {name} dead")
                     return
 
+    def notify_thread_dead(self, name: str) -> None:
+        """Externally-detected thread death → RECOVERY with cause=thread.
+
+        Used when the engine observes ``Thread.is_alive() is False`` directly,
+        without waiting for the heartbeat staleness threshold.
+        """
+        with self._lock:
+            self._trigger_recovery_locked(f"thread {name} dead")
+
+    def unregister_thread(self, name: str) -> None:
+        """Remove a heartbeat entry. Idempotent."""
+        with self._lock:
+            self._heartbeats.pop(name, None)
+
     # ------------------------------------------------------------------
     # ONNX session tracking
     # ------------------------------------------------------------------
@@ -540,10 +555,10 @@ class RuntimeGuardLayer:
 
     def check_anti_cheat(
         self,
-        prev_kp: np.ndarray | None,
-        curr_kp: np.ndarray | None,
-        prev_rgb: np.ndarray | None,
-        curr_rgb: np.ndarray | None,
+        prev_kp: np.ndarray[Any, np.dtype[Any]] | None,
+        curr_kp: np.ndarray[Any, np.dtype[Any]] | None,
+        prev_rgb: np.ndarray[Any, np.dtype[Any]] | None,
+        curr_rgb: np.ndarray[Any, np.dtype[Any]] | None,
     ) -> None:
         """Enforce: different kp → different output. Violation → HARD_FAIL."""
         if prev_kp is None or curr_kp is None:

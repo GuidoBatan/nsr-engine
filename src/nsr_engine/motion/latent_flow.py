@@ -22,18 +22,6 @@ from pathlib import Path
 
 import numpy as np
 
-try:
-    import onnxruntime as ort
-except Exception:
-    class _FakeSession:
-        def __init__(self,*a,**k): pass
-        def run(self,*a,**k):
-            import numpy as np
-            return [np.zeros((1,256),dtype=np.float32)]
-    class ort:
-        InferenceSession=_FakeSession
-
-
 from nsr_engine.face.onnx_util import (
     describe_io,
     make_session,
@@ -58,6 +46,7 @@ from nsr_engine.util.latents import (
     ImplicitKeypoints,
     WarpedFeature3D,
 )
+from nsr_engine.util.onnx_compat import ort
 
 logger = logging.getLogger("nsr.motion.warping")
 
