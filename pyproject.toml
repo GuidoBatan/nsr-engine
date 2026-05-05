@@ -1,0 +1,79 @@
+[project]
+name = "nsr-engine"
+version = "1.0.0"
+description = "Face animation engine with LivePortrait architecture and MediaPipe detection (Apache 2.0)"
+requires-python = ">=3.11,<3.13"
+authors = [
+    {name = "Guido Batan", email = "contact@guidobatan.com"}
+]
+
+license = {text = "Apache-2.0"}
+
+keywords = ["talking-head", "face-animation", "liveportrait", "onnx", "mediapipe", "cpu-inference"]
+
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Minimal runtime deps.
+dependencies = [
+    "numpy==1.26.4",
+    "opencv-python==4.8.1.78",
+    "onnxruntime==1.18.0",
+    "mediapipe==0.10.14",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.2",
+    "ruff==0.5.0",
+    "mypy==1.10.0",
+]
+
+[project.scripts]
+nsr-engine = "nsr_engine.__main__:main"
+
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/nsr_engine"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/nsr_engine",
+    "scripts",
+    "docs",
+    "tests",
+    "pyproject.toml",
+    "README.md",
+]
+
+# ----- ruff --------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "C4", "SIM", "PERF"]
+ignore = []
+
+# ----- mypy --------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+plugins = []
+
+[[tool.mypy.overrides]]
+module = ["cv2", "cv2.*", "onnxruntime", "onnxruntime.*", "mediapipe", "mediapipe.*"]
+ignore_missing_imports = true
+
+# ----- uv ----------------------------------------------------------------
+[tool.uv]
+# No custom sources; vanilla PyPI only.
