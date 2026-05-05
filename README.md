@@ -35,21 +35,37 @@ See NOTICE.md for full attribution.
 
 ## Installation
 
-```bash
-# Standard
-python -m venv .venv
-source .venv/bin/activate  # Or .venv\Scripts\activate on Windows
-pip install -r requirements.lock
-pip install -e ".[dev]"    # For development extras
+The project is dependency-locked via `requirements.lock` (generated with
+`uv pip compile pyproject.toml`). Install from the lockfile for byte-for-byte
+reproducibility, then add the package itself in editable mode.
 
-# Using uv (Recommended)
+### With `uv` (recommended)
+
+```bash
 uv venv --python 3.11
-source .venv/bin/activate
-uv pip install -r requirements.lock
-uv pip install -e ".[dev]"
+source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
+uv pip sync requirements.lock
+uv pip install -e ".[dev]" --no-deps
 ```
 
-MediaPipe models are auto-downloaded on first `import mediapipe`.
+### With `pip`
+
+```bash
+python -m venv .venv
+source .venv/bin/activate            # Windows: .venv\Scripts\Activate.ps1
+pip install -r requirements.lock
+pip install -e ".[dev]" --no-deps
+```
+
+The `--no-deps` flag is intentional: dependency resolution belongs to the
+lockfile, not to `pyproject.toml`. This is the same flow used in CI
+(`.github/workflows/tests.yml`).
+
+> **Note on `uv run`.** Avoid `uv run pytest` for this project. `uv run`
+> resolves an isolated environment from `pyproject.toml` (without the
+> lockfile), which can pull different transitive versions and trigger
+> re-downloads of large packages such as `mediapipe`. Activate `.venv`
+> and invoke tools directly.
 
 ## Model Acquisition (Neural Pipeline)
 
@@ -75,7 +91,7 @@ Do not rename files. The engine expects these exact filenames for session resolu
 
 Full ONNX I/O contracts:
 ```bash
-python scripts/fetch_models.py   # prints the contracts to stderr; no download
+python scripts/print_model_contracts.py   # prints to stdout; no download
 ```
 
 ## Execution
@@ -92,14 +108,24 @@ The engine workflow:
 
 ## Testing
 
+After installation (with `.venv` active):
+
 ```bash
-pytest tests/ -v
 ruff check .
 mypy src/
+pytest tests/ -v
 ```
 
-- Skeleton mode: Auto-skips integration tests if ONNX models are missing.
-- Full mode: Executes regression tests (identity preservation, temporal stability, responsiveness) when all models are present.
+Two execution modes:
+
+- **Skeleton mode** (default): one or more of the five LivePortrait ONNX
+  files are missing from `models/face/`. Tests marked `requires_onnx`
+  are skipped; data-contract, wiring, and shape-assertion tests run
+  unconditionally.
+- **Integrated mode**: all five ONNX files present. Regression tests
+  (identity preservation, temporal stability, responsiveness) activate.
+
+Detection is conservative — partial presence fails closed (skeleton).
 
 ## Documentation
 
