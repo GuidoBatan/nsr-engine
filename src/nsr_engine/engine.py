@@ -383,17 +383,16 @@ class NSREngine:
         logger.info("RGL RECOVERY: cause=%r stale_thread=%r", cause, stale)
         time.sleep(0.2)
 
-        if cause == "camera":
-            if self._camera_supervisor is not None:
-                self._camera_supervisor.release()
+        if cause == "camera" and self._camera_supervisor is not None:
+            self._camera_supervisor.release()
+            opened = self._camera_supervisor.open_best()
+            if not opened:
+                # Same backend failed → blacklist and try a different one.
+                self._camera_supervisor.blacklist_current_backend()
                 opened = self._camera_supervisor.open_best()
-                if not opened:
-                    # Same backend failed → blacklist and try a different one.
-                    self._camera_supervisor.blacklist_current_backend()
-                    opened = self._camera_supervisor.open_best()
-                if not opened:
-                    self._rgl.trigger_recovery("camera reopen failed in RECOVERY")
-                    return
+            if not opened:
+                self._rgl.trigger_recovery("camera reopen failed in RECOVERY")
+                return
 
         # Restart any worker thread that has died, regardless of cause —
         # a thread that exited cannot be re-entered, so this is safe and
@@ -821,17 +820,17 @@ class NSREngine:
         x2 = min(w - 1, cx + box_w // 2)
         y2 = min(h - 1, cy + box_h // 2)
 
-        l = max(6, min(w, h) // 10)
+        tick_len = max(6, min(w, h) // 10)
 
-        cv2.line(frame_bgr, (x1, y1), (x1 + l, y1), color, thick)
-        cv2.line(frame_bgr, (x1, y1), (x1, y1 + l), color, thick)
-        cv2.line(frame_bgr, (x2, y1), (x2 - l, y1), color, thick)
-        cv2.line(frame_bgr, (x2, y1), (x2, y1 + l), color, thick)
+        cv2.line(frame_bgr, (x1, y1), (x1 + tick_len, y1), color, thick)
+        cv2.line(frame_bgr, (x1, y1), (x1, y1 + tick_len), color, thick)
+        cv2.line(frame_bgr, (x2, y1), (x2 - tick_len, y1), color, thick)
+        cv2.line(frame_bgr, (x2, y1), (x2, y1 + tick_len), color, thick)
 
-        cv2.line(frame_bgr, (x1, y2), (x1 + l, y2), color, thick)
-        cv2.line(frame_bgr, (x1, y2), (x1, y2 - l), color, thick)
-        cv2.line(frame_bgr, (x2, y2), (x2 - l, y2), color, thick)
-        cv2.line(frame_bgr, (x2, y2), (x2, y2 - l), color, thick)
+        cv2.line(frame_bgr, (x1, y2), (x1 + tick_len, y2), color, thick)
+        cv2.line(frame_bgr, (x1, y2), (x1, y2 - tick_len), color, thick)
+        cv2.line(frame_bgr, (x2, y2), (x2 - tick_len, y2), color, thick)
+        cv2.line(frame_bgr, (x2, y2), (x2, y2 - tick_len), color, thick)
 
         axes = (max(30, box_w // 3), max(40, box_h // 2))
         cv2.ellipse(frame_bgr, (cx, cy), axes, 0.0, 0.0, 360.0, color, thick)

@@ -125,7 +125,7 @@ class WebcamCapture:
         try:
             if self._cap:
                 self._cap.release()
-        except:
+        except Exception:
             pass
         self._open()
 
@@ -170,5 +170,5 @@ class WebcamCapture:
         try:
             if self._cap:
                 self._cap.release()
-        except:
+        except Exception:
             pass

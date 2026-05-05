@@ -101,7 +101,7 @@ def _as_motion_params(out: Any) -> MotionParams:
     if isinstance(out, MotionParams):
         return out
 
-    if isinstance(out, (tuple, list)) and len(out) >= 7:
+    if isinstance(out, tuple | list) and len(out) >= 7:
         return MotionParams(
             pitch=np.asarray(out[0], dtype=np.float32),
             yaw=np.asarray(out[1], dtype=np.float32),
@@ -308,7 +308,7 @@ class TestPipelineProfiling:
         assert total_p95 < 8000, f"Jitter excesivo: p95={total_p95:.2f}ms"
 
         heavy = max(
-            (k for k in stats.keys() if k != "TOTAL_FRAME"),
+            (k for k in stats if k != "TOTAL_FRAME"),
             key=lambda k: stats[k]["avg"],
         )
         print(f"\nBOTTLENECK: {heavy} ({stats[heavy]['avg']:.2f} ms)")

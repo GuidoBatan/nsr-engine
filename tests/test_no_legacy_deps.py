@@ -53,7 +53,7 @@ _WHITELIST_PATHS: tuple[str, ...] = ()
 
 
 def _py_sources() -> list[Path]:
-    return [p for p in PACKAGE_ROOT.rglob("*.py")]
+    return list(PACKAGE_ROOT.rglob("*.py"))
 
 
 class TestNoLegacyDependencies:

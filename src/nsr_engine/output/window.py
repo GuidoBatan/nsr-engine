@@ -42,11 +42,11 @@ class OBSWindow:
         if self._headless:
             return False
         key = cv2.waitKey(1) & 0xFF
-        if key == ord("q") or key == 27:
-            return True
-        if cv2.getWindowProperty(WINDOW_TITLE, cv2.WND_PROP_VISIBLE) < 1:
-            return True
-        return False
+        return (
+            key == ord("q")
+            or key == 27
+            or cv2.getWindowProperty(WINDOW_TITLE, cv2.WND_PROP_VISIBLE) < 1
+        )
 
     def close(self) -> None:
         if not self._headless:
